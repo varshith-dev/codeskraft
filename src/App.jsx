@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import Navbar from './components/Navbar'
 import Feed from './pages/Feed'
-import Profile from './pages/Profile' // You had this
+import Profile from './pages/UserProfile'
 import CreatePost from './pages/CreatePost'
 import Auth from './pages/Auth'
 
