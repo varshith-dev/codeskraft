@@ -1,46 +1,147 @@
-import { Link } from 'react-router-dom';
-import { Terminal, LogOut, PlusSquare } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { supabase } from '../supabaseClient'
+import { Home, PlusSquare, User, LogOut, Code2, BarChart3 } from 'lucide-react'
+import Avatar from './Avatar'
 
 export default function Navbar({ session }) {
-  return (
-    <nav className="border-b border-slate-800 bg-slate-950 sticky top-0 z-50 backdrop-blur-md bg-opacity-80">
-      <div className="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="bg-emerald-500/10 p-2 rounded-lg group-hover:bg-emerald-500/20 transition">
-            <Terminal className="text-emerald-500" size={24} />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-100">
-            Code<span className="text-emerald-500">Crafts</span>
-          </span>
-        </Link>
+  const location = useLocation()
+  const [profile, setProfile] = useState(null)
 
-        {/* Actions */}
-        <div className="flex items-center gap-4">
-          {session ? (
-            <>
-              <Link 
-                to="/create" 
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-medium transition-all shadow-lg shadow-emerald-900/20"
-              >
-                <PlusSquare size={18} />
-                <span>Craft Post</span>
+  const isActive = (path) => location.pathname === path
+    ? "text-blue-600"
+    : "text-gray-600 hover:text-gray-900"
+
+  useEffect(() => {
+    if (session) {
+      fetchProfile()
+    }
+  }, [session])
+
+  const fetchProfile = async () => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('profile_picture_url, username, display_name')
+        .eq('id', session.user.id)
+        .single()
+
+      setProfile(data)
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    }
+  }
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+  }
+
+  return (
+    <>
+      {/* DESKTOP TOP BAR */}
+      <nav className="fixed top-0 w-full glass border-b border-gray-200/50 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 font-bold text-xl text-gray-900 hover:text-blue-600 transition-colors">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center rotate-3 hover:rotate-0 transition-transform">
+              <Code2 className="w-6 h-6 text-white" />
+            </div>
+            <span className="hidden sm:block">CodeKrafts</span>
+          </Link>
+
+          {/* Desktop Links */}
+          <div className="hidden md:flex items-center gap-6">
+            <Link to="/" className={`flex items-center gap-2 font-medium transition-all hover:scale-105 ${isActive('/')}`}>
+              <Home size={20} />
+              <span>Home</span>
+            </Link>
+
+            {session && (
+              <>
+                <Link to="/create" className={`flex items-center gap-2 font-medium transition-all hover:scale-105 ${isActive('/create')}`}>
+                  <PlusSquare size={20} />
+                  <span>Create</span>
+                </Link>
+
+                <Link to="/admin" className={`flex items-center gap-2 font-medium transition-all hover:scale-105 ${isActive('/admin')}`}>
+                  <BarChart3 size={20} />
+                  <span>Dashboard</span>
+                </Link>
+
+                <Link to="/profile" className={`flex items-center gap-2 font-medium transition-all ${isActive('/profile')}`}>
+                  <Avatar
+                    src={profile?.profile_picture_url}
+                    alt={profile?.display_name || profile?.username || 'User'}
+                    size="sm"
+                  />
+                  <span>{profile?.display_name || profile?.username || 'Profile'}</span>
+                </Link>
+
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full transition-all active:scale-95"
+                >
+                  <span className="hidden lg:inline">Sign Out</span>
+                  <LogOut size={16} className="lg:hidden" />
+                </button>
+              </>
+            )}
+
+            {!session && (
+              <Link to="/login" className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full shadow-md transition-all hover:shadow-lg hover:scale-105">
+                Get Started
               </Link>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="text-slate-400 hover:text-white transition p-2"
-                title="Logout"
-              >
-                <LogOut size={20} />
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* MOBILE BOTTOM TAB BAR */}
+      <div className="md:hidden fixed bottom-0 w-full glass border-t border-gray-200/50 z-50 pb-safe shadow-lg">
+        <div className="flex justify-around items-center h-16 px-2">
+          <Link to="/" className={`flex flex-col items-center p-2 min-w-[60px] transition-all ${isActive('/') ? 'text-blue-600 scale-110' : 'text-gray-500'}`}>
+            <Home size={24} />
+            <span className="text-[10px] mt-1 font-medium">Feed</span>
+          </Link>
+
+          {session && (
+            <>
+              <Link to="/create" className={`flex flex-col items-center p-2 min-w-[60px] transition-all ${isActive('/create') ? 'text-blue-600 scale-110' : 'text-gray-500'}`}>
+                <div className={`p-2 rounded-full ${isActive('/create') ? 'bg-blue-100' : ''}`}>
+                  <PlusSquare size={24} />
+                </div>
+                <span className="text-[10px] mt-1 font-medium">Post</span>
+              </Link>
+
+              <Link to="/admin" className={`flex flex-col items-center p-2 min-w-[60px] transition-all ${isActive('/admin') ? 'text-blue-600 scale-110' : 'text-gray-500'}`}>
+                <BarChart3 size={24} />
+                <span className="text-[10px] mt-1 font-medium">Stats</span>
+              </Link>
+
+              <Link to="/profile" className={`flex flex-col items-center p-2 min-w-[60px] transition-all ${isActive('/profile') ? 'text-blue-600 scale-110' : 'text-gray-500'}`}>
+                <Avatar
+                  src={profile?.profile_picture_url}
+                  alt={profile?.display_name || profile?.username || 'User'}
+                  size="sm"
+                />
+                <span className="text-[10px] mt-1 font-medium">Profile</span>
+              </Link>
+
+              <button onClick={handleLogout} className="flex flex-col items-center p-2 min-w-[60px] text-gray-500 hover:text-red-600 transition-all">
+                <LogOut size={24} />
+                <span className="text-[10px] mt-1 font-medium">Logout</span>
               </button>
             </>
-          ) : (
-            <Link to="/auth" className="text-emerald-400 font-medium hover:text-emerald-300">
-              Login
+          )}
+
+          {!session && (
+            <Link to="/login" className="flex flex-col items-center p-2 min-w-[60px] text-blue-600">
+              <User size={24} />
+              <span className="text-[10px] mt-1 font-medium">Login</span>
             </Link>
           )}
         </div>
       </div>
-    </nav>
-  );
+    </>
+  )
 }

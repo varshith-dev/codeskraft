@@ -1,46 +1,103 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Terminal } from 'lucide-react'
+import { Mail, Loader2, Code2, ArrowRight } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
+  const [sent, setSent] = useState(false)
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setLoading(true)
-    const { error } = await supabase.auth.signInWithOtp({ email })
-    if (error) alert(error.message)
-    else alert('Check your email for the magic link!')
-    setLoading(false)
+    
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin, // Redirects back to your app
+        }
+      })
+      if (error) throw error
+      setSent(true)
+      toast.success('Magic link sent!')
+    } catch (error) {
+      toast.error(error.error_description || error.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh] px-4">
-      <div className="w-full max-w-md bg-slate-800/50 border border-slate-700 p-8 rounded-2xl shadow-2xl backdrop-blur-sm">
-        <div className="flex justify-center mb-6">
-          <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-            <Terminal className="text-emerald-400" size={24} />
+    <div className="min-h-[80vh] flex items-center justify-center">
+      <div className="w-full max-w-md">
+        
+        {/* Card Container */}
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 text-center">
+          
+          {/* Logo Animation */}
+          <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce-slow">
+            <Code2 size={32} className="text-blue-600" />
+          </div>
+
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to CodeKrafts</h1>
+          <p className="text-gray-500 mb-8">The social network for developers.</p>
+
+          {sent ? (
+            // Success State
+            <div className="bg-green-50 p-6 rounded-xl border border-green-100 animate-in fade-in zoom-in">
+              <div className="text-green-600 font-semibold text-lg mb-2">Check your email!</div>
+              <p className="text-gray-600 text-sm">
+                We sent a magic link to <span className="font-bold">{email}</span>.
+                <br/>Click it to log in.
+              </p>
+              <button 
+                onClick={() => setSent(false)}
+                className="mt-4 text-sm text-gray-400 hover:text-gray-600 underline"
+              >
+                Try a different email
+              </button>
+            </div>
+          ) : (
+            // Login Form
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="relative">
+                <Mail className="absolute left-4 top-3.5 text-gray-400" size={20} />
+                <input
+                  type="email"
+                  placeholder="name@example.com"
+                  className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-gray-50 focus:bg-white"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={20} className="animate-spin" /> Sending...
+                  </>
+                ) : (
+                  <>
+                    Send Magic Link <ArrowRight size={20} />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <p className="text-xs text-gray-400">
+              By joining, you agree to share nice code and funny memes.
+            </p>
           </div>
         </div>
-        <h1 className="text-3xl font-bold text-center mb-2">Welcome to Code Crafts</h1>
-        <p className="text-slate-400 text-center mb-8">Share snippets, memes, and dev chaos.</p>
-        
-        <form onSubmit={handleLogin} className="space-y-4">
-          <input
-            className="w-full p-3 rounded-lg bg-slate-900 border border-slate-700 focus:border-emerald-500 outline-none text-white transition"
-            type="email"
-            placeholder="dev@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <button
-            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold p-3 rounded-lg transition disabled:opacity-50"
-            disabled={loading}
-          >
-            {loading ? 'Sending Magic Link...' : 'Send Magic Link'}
-          </button>
-        </form>
       </div>
     </div>
   )
